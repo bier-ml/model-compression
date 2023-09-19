@@ -4,7 +4,10 @@ version = "0.1.0"
 description = ""
 authors = ["konstantgr <konstantin.grotov@gmail.com>"]
 readme = "README.md"
-packages = [{include = "model_compression"}]
+packages = [
+    {include = "model_compression"},
+    {include = "all_models"}
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"

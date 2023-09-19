@@ -14,5 +14,9 @@ class BaseModel(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    def sample_infer(self) -> Any:
+        raise NotImplementedError()
+
+    @abstractmethod
     def infer(self, *args, **kwargs) -> Any:
         raise NotImplementedError()

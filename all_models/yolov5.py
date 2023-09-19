@@ -4,6 +4,7 @@ import pandas as pd
 import torch
 from PIL import Image
 
+from all_models import CHECKPOINTS_DIR
 from all_models.abstract_model import BaseModel
 
 
@@ -29,7 +30,13 @@ class YoloV5(BaseModel):
 
     @staticmethod
     def init_model() -> Any:
-        return torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+        torch.hub.set_dir(CHECKPOINTS_DIR)
+        return torch.hub.load(
+            'ultralytics/yolov5:master', 'custom', CHECKPOINTS_DIR / 'yolov5s'
+        )
+
+    def sample_infer(self) -> Any:
+        return self.infer()
 
     def infer(self, images: Optional[list[Image]] = None) -> pd.DataFrame:
         imgs = ['https://ultralytics.com/images/zidane.jpg']
