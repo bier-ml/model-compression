@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "model-compression"
+version = "0.1.0"
+description = ""
+authors = ["konstantgr <konstantin.grotov@gmail.com>"]
+readme = "README.md"
+packages = [{include = "model_compression"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+torch = {version = "^2.0.1", platform = "darwin"}
+opencv-python = "^4.8.0.76"
+pandas = "^2.1.0"
+requests = "^2.31.0"
+pillow = "^10.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
