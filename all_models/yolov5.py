@@ -31,9 +31,12 @@ class YoloV5(BaseModel):
     @staticmethod
     def init_model() -> Any:
         torch.hub.set_dir(CHECKPOINTS_DIR)
-        return torch.hub.load(
-            'ultralytics/yolov5:master', 'custom', CHECKPOINTS_DIR / 'yolov5s'
+        model = torch.hub.load(
+            'ultralytics/yolov5:master',
+            'custom', CHECKPOINTS_DIR / 'yolov5s'
         )
+        model.eval()
+        return model
 
     def sample_infer(self) -> Any:
         return self.infer()
