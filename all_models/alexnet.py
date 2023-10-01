@@ -35,9 +35,13 @@ class AlexNet(BaseModel):
     def init_model() -> Any:
         torch.hub.set_dir(CHECKPOINTS_DIR)
         model = torch.hub.load(
-            'pytorch/vision:v0.10.0',
-            'alexnet', pretrained=True
+            # 'pytorch/vision:v0.10.0',
+            'alexnet_mnist.pth',
+            'alexnet',
+            # pretrained=False
         )
+
+        # model.load_state_dict(torch.load(''))
         model.eval()
         return model
 
