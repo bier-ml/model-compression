@@ -11,6 +11,7 @@ class MNISTAlexNet(nn.Module):
 
     def __init__(self, num_classes):
         super(MNISTAlexNet, self).__init__()
+        self.device = torch.device('cuda')
         alexnet = models.alexnet(pretrained=True)
 
         for param in alexnet.features.parameters():
@@ -46,7 +47,7 @@ class MNISTAlexNet(nn.Module):
         total = 0
         with torch.no_grad():
             for images, labels in test_loader:
-                images, labels = images, labels
+                images, labels = images.to(self.device), labels.to(self.device)
                 outputs = self(images)
                 _, predicted = torch.max(outputs, 1)
                 total += labels.size(0)
