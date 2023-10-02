@@ -23,6 +23,8 @@ tensorflow-model-optimization = "^0.7.5"
 model-profiler = "^1.1.8"
 jupyter = "^1.0.0"
 notebook = "^7.0.4"
+torchvision = "^0.15.2"
+tqdm = "^4.66.1"
 
 
 [build-system]

@@ -4,8 +4,8 @@ from typing import Any, Optional
 import pandas as pd
 import requests
 import torch
-from torchvision import transforms
 from PIL import Image
+from torchvision import transforms
 
 from all_models import CHECKPOINTS_DIR
 from all_models.abstract_model import BaseModel
