@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
+from sklearn.cluster import KMeans
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from tqdm import tqdm
@@ -12,7 +13,7 @@ class MNISTAlexNet(nn.Module):
     def __init__(self, num_classes):
         super(MNISTAlexNet, self).__init__()
         self.device = torch.device('cuda')
-        alexnet = models.alexnet(pretrained=True)
+        alexnet = models.alexnet()
 
         for param in alexnet.features.parameters():
             param.requires_grad = False
@@ -89,9 +90,9 @@ class MNISTAlexNet(nn.Module):
             model.train()
             running_loss = 0.0
             for images, labels in tqdm(train_loader):
-                images, labels = images.to(device), labels.to(device)
+                images, labels = images.to(self.device), labels.to(self.device)
                 optimizer.zero_grad()
-                outputs = model(images).to(device)
+                outputs = model(images).to(self.device)
                 loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
@@ -99,7 +100,20 @@ class MNISTAlexNet(nn.Module):
 
             print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader)}")
 
-        # torch.save(model.state_dict(), 'alexnet_mnist.pth')
+        torch.save(model.state_dict(), 'alexnet_mnist.pth')
+
+    def cluster_model_weights(self, n_clusters=256):
+        # Clustering Model Weights
+        for name, module in self.named_modules():
+            if isinstance(module, torch.nn.Conv2d) or isinstance(module, torch.nn.Linear):
+                original_weights = module.weight.data.cpu().numpy()
+                reshaped_weights = original_weights.reshape(-1, 1)  # collapse to 1D
+                # Fit k-means
+                kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=3, max_iter=10).fit(reshaped_weights)
+                # Replace weights with cluster center values
+                cluster_labels = kmeans.labels_
+                new_weights = kmeans.cluster_centers_[cluster_labels]
+                module.weight.data = torch.from_numpy(new_weights.reshape(original_weights.shape)).to(self.device)
 
 
 if __name__ == '__main__':
