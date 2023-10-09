@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import torchvision.models as models
 from sklearn.cluster import KMeans
@@ -83,16 +84,16 @@ class MNISTAlexNet(nn.Module):
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+        optimizer = optim.SGD(self.parameters(), lr=0.001, momentum=0.9)
 
         num_epochs = 3
         for epoch in tqdm(range(num_epochs)):
-            model.train()
+            self.train()
             running_loss = 0.0
             for images, labels in tqdm(train_loader):
                 images, labels = images.to(self.device), labels.to(self.device)
                 optimizer.zero_grad()
-                outputs = model(images).to(self.device)
+                outputs = self(images).to(self.device)
                 loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
@@ -100,7 +101,7 @@ class MNISTAlexNet(nn.Module):
 
             print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader)}")
 
-        torch.save(model.state_dict(), 'alexnet_mnist.pth')
+        torch.save(self.state_dict(), 'alexnet_mnist.pth')
 
     def cluster_model_weights(self, n_clusters=256):
         # Clustering Model Weights
@@ -115,10 +116,62 @@ class MNISTAlexNet(nn.Module):
                 new_weights = kmeans.cluster_centers_[cluster_labels]
                 module.weight.data = torch.from_numpy(new_weights.reshape(original_weights.shape)).to(self.device)
 
+    def knowledge_distillation(self, teacher_model, temperature=3.0, alpha=0.5):
+        self.teacher = teacher_model
+        self.temperature = temperature
+        self.alpha = alpha
+
+        transform = transforms.Compose([
+            transforms.Grayscale(num_output_channels=3),
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+
+        batch_size = 32
+
+        train_dataset = datasets.MNIST(root='./data', train=True, transform=transform, download=True)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+
+        optimizer = optim.SGD(self.parameters(), lr=0.001, momentum=0.9)
+
+        num_epochs = 3
+        for epoch in tqdm(range(num_epochs)):
+            self.train()
+            running_loss = 0.0
+            for images, labels in tqdm(train_loader):
+                images, labels = images.to(self.device), labels.to(self.device)
+                optimizer.zero_grad()
+                student_outputs = self(images)
+
+                with torch.no_grad():
+                    teacher_outputs = self.teacher(images)
+
+                loss = (1 - self.alpha) * F.cross_entropy(student_outputs, labels)
+                loss += self.alpha * (self.temperature ** 2) * F.kl_div(
+                    F.log_softmax(student_outputs / self.temperature, dim=-1),
+                    F.softmax(teacher_outputs / self.temperature, dim=-1))
+                loss.backward()
+                optimizer.step()
+                running_loss += loss.item()
+
+            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader)}")
+
+        torch.save(self.state_dict(), 'distillated.pth')
+
 
 if __name__ == '__main__':
     device = torch.device("cuda")
-    model = MNISTAlexNet(num_classes=10).to(device)
+    # model = MNISTAlexNet(num_classes=10).to(device)
 
-    model.train_save()
-    # model.infer()
+    teacher_model = MNISTAlexNet(num_classes=10).to(device)
+    # teacher_model.train_save()
+    teacher_model.load_state_dict(torch.load('alexnet_mnist.pth'))
+
+
+    student_model = MNISTAlexNet(num_classes=10).to(device)
+    student_model.knowledge_distillation(teacher_model)
+
+    # student_model.load_state_dict(torch.load('distillated.pth'))
+    # teacher_model.infer()
+    # student_model.infer()
